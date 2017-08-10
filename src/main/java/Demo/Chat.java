@@ -1,14 +1,23 @@
 package Demo;
 
+import util.GetHttpSessionConfigurator;
+
+import javax.servlet.http.HttpSession;
 import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
+
+import java.time.LocalTime;
+import java.util.Date;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 /**
  * Created by nsh on 2017/8/9 0009.
  */
-@ServerEndpoint("/websocket")
+@ServerEndpoint(value = "/websocket",configurator= GetHttpSessionConfigurator.class)
+//@ServerEndpoint(value = "/websocket")
 public class Chat {
 
     //静态变量，用来记录当前在线链接数
@@ -20,24 +29,35 @@ public class Chat {
     //与某个客户端连接的会话，需要通过他给客户端发送数据
     private Session session;
 
+    private static HttpSession httpSession;
+
+    private static Map<String,String> userMap = new HashMap<String, String>();
+
     /**
      * 连接成功调用的方法
      * @param session
      */
     @OnOpen
-    public void onOpen(Session session){
+    public void onOpen(Session session,EndpointConfig config){
+
+        httpSession= (HttpSession) config.getUserProperties().get(HttpSession.class.getName());
+
+
         this.session =session;
+        userMap.put(session.getId(),httpSession.getAttribute("name").toString());
         set.add(this);              //加入set中
         addOnlineCount();           //在线数+1
-        System.out.println("有新连接加入！，当前在线人数为"+getOnlineCount());
+        System.out.println("欢迎"+httpSession.getAttribute("name")+"加入！，当前在线人数为"+getOnlineCount());
+
     }
 
     /**
      * 连接关闭调用的方法
      */
     @OnClose
-    public void onClose(){
+    public void onClose(Session session){
         set.remove(this);
+        userMap.remove(session.getId());
         subOnlineCount();
         System.out.println("有一个连接关闭，当前在线人数为"+getOnlineCount());
     }
@@ -50,12 +70,13 @@ public class Chat {
      */
     @OnMessage
     public void onMessage(String message,Session session){
-
-        System.out.println("来自客户端的消息："+message);
+        LocalTime timePoint = LocalTime.now(); // 当前时间
         //群发消息
         for(Chat chat:set){
             try {
-                chat.sendMessage(message);
+                String name =userMap.get(session.getId());
+                System.out.println("当前用户："+name);
+                chat.sendMessage("["+name+"] "+message);
             } catch (IOException e) {
                 e.printStackTrace();
                 continue;
