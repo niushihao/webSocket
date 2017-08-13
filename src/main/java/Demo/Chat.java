@@ -7,8 +7,6 @@ import javax.websocket.*;
 import javax.websocket.server.ServerEndpoint;
 import java.io.IOException;
 
-import java.time.LocalTime;
-import java.util.Date;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CopyOnWriteArraySet;
@@ -70,7 +68,6 @@ public class Chat {
      */
     @OnMessage
     public void onMessage(String message,Session session){
-        LocalTime timePoint = LocalTime.now(); // 当前时间
         //群发消息
         for(Chat chat:set){
             try {

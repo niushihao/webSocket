@@ -1,0 +1,102 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>测试画图</title>
+    <style>
+        body {
+            padding: 20px;
+        }
+        #canvas {
+            float: left;
+            height: 450px;
+            width: 400px;
+            border: 1px solid;
+            margin-bottom: 10px;
+            margin-left: 10px;
+            background-color: white;
+        }
+    </style>
+    <script type="text/javascript" src="js/jquery-1.7.2.min.js"></script>
+</head>
+<body oncontextmenu="return false;"
+      onselectstart="return false;">
+    <div id="canvas">
+        <canvas id="c1" width="400" height="400">
+            <span>不支持画布</span>
+        </canvas>
+        <button id="cleanBtn">清空</button>
+    </div>
+    <div id="xyCode"></div>
+
+    <script type="text/javascript">
+        var ws = null;
+        (function(){
+            startWebSocket();
+            initCanvas();
+        })();
+
+        function startWebSocket() {
+            if ('WebSocket' in window)
+                //websocket =new WebSocket("ws://106.14.187.14:8080/ws/websocket");
+                ws = new WebSocket("ws://localhost:8090/websocket");
+            else if ('MozWebSocket' in window)
+                ws = new MozWebSocket("ws://localhost:8090/websocket");
+                //websocket =new WebSocket("ws://106.14.187.14:8080/ws/websocket");
+            else
+                alert("not support");
+            ws.onmessage =function (evt) {
+                var oC = document.getElementById('c1');
+                var oGC = oC.getContext('2d');
+                var data =evt.data;
+                if(data.indexOf(']')){
+                    data=data.substring(data.indexOf(']')+2);
+                }
+                console.log(data);
+                var coordArry = data.split("_");
+
+                var x = coordArry[0];
+                var y = coordArry[1];
+                console.log(x);
+                console.log(y);
+                oGC.lineWidth = 1;
+                oGC.moveTo(x-1,y-1);
+                oGC.lineTo(x,y);
+                oGC.stroke();
+            }
+
+        }
+        //画图
+        function initCanvas() {
+            var oC = document.getElementById('c1');
+            var oGC = oC.getContext('2d');
+
+            document.getElementById('c1').onmousedown = function(ev) {
+                var ev = ev || window.event;
+                oGC.moveTo(ev.clientX - oC.offsetLeft, ev.clientY - oC.offsetTop);
+                document.onmousemove = function(ev) {
+                    var ev = ev || window.event;
+                    var x = ev.clientX-oC.offsetLeft;
+                    var y = ev.clientY-oC.offsetTop;
+                    oGC.lineWidth=1;
+                    oGC.lineTo(x,y);
+
+                    ws.send(x+'_'+y);
+                    oGC.stroke();
+                };
+                document.onmouseup = function() {
+                    document.onmousemove = null;
+                    document.onmouseup = null;
+                };
+            };
+        }
+        //清空
+        $('#cleanBtn').click(function () {
+            var c=document.getElementById("c1");
+            var cxt=c.getContext("2d");
+            c.height=c.height;
+        });
+    </script>
+</body>
+
+</html>
